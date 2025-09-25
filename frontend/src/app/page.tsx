@@ -7,6 +7,7 @@ export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [streams, setStreams] = useState<Array<{ id: number; name: string; url: string; backendId?: string; processorId?: string }>>([]);
   const [fullscreenLocalId, setFullscreenLocalId] = useState<number | null>(null);
+  const [imgVersion, setImgVersion] = useState<number>(0);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -40,11 +41,50 @@ export default function Home() {
     } catch {}
   }, [streams]);
 
+  // When page becomes visible (tab switch or navigation), bump image version to refresh MJPEG connections
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible") {
+        setImgVersion((v) => v + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  // Resume backend streams if needed after reload/navigation
+  useEffect(() => {
+    const resume = async () => {
+      const tasks = streams
+        .filter((s) => s.processorId && s.url)
+        .map(async (s) => {
+          try {
+            const statusRes = await fetch(`/api/stream_status/${encodeURIComponent(String(s.processorId))}`, { cache: "no-store" });
+            const status = await statusRes.json().catch(() => ({}));
+            if (!status?.streaming) {
+              await fetch("/api/start_stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: s.url, stream_id: s.processorId }),
+              }).catch(() => {});
+            }
+          } catch {}
+        });
+      if (tasks.length) {
+        await Promise.allSettled(tasks);
+        setImgVersion((v) => v + 1);
+      }
+    };
+    if (streams.length > 0) {
+      resume();
+    }
+  }, [streams]);
+
   const StreamLabel = ({ label }: { label: string }) => (
     <span className="text-white/70">{label}</span>
   );
 
-  function RightPanel({ hasStreams }: { hasStreams: boolean }) {
+  function RightPanel({ hasActiveStreams }: { hasActiveStreams: boolean }) {
     const [stats, setStats] = useState<{ total_faces?: number; suspicious_faces?: number; clean_faces?: number; database_entries?: number; suspicious_ids?: any } | null>(null);
     const [suspiciousIds, setSuspiciousIds] = useState<any[]>([]);
     const [suspects, setSuspects] = useState<any[]>([]);
@@ -60,11 +100,11 @@ export default function Home() {
           if (!isActive) return;
           setStats(data || {});
         } catch {}
-        if (hasStreams && isActive) {
+        if (hasActiveStreams && isActive) {
           timer = setTimeout(poll, 2000);
         }
       };
-      if (hasStreams) {
+      if (hasActiveStreams) {
         poll();
       } else {
         setStats(null);
@@ -76,22 +116,22 @@ export default function Home() {
         controller.abort();
         if (timer) clearTimeout(timer);
       };
-    }, [hasStreams]);
+    }, [hasActiveStreams]);
 
     // Track latest suspicious_ids from stats
     useEffect(() => {
-      if (!hasStreams) return;
+      if (!hasActiveStreams) return;
       const ids = (stats?.suspicious_ids as any) || [];
       // Normalize to array
       const nextIds = Array.isArray(ids) ? ids : Array.from(ids || []);
       setSuspiciousIds(nextIds);
-    }, [hasStreams, stats?.suspicious_ids]);
+    }, [hasActiveStreams, stats?.suspicious_ids]);
 
     // Fetch suspects list when suspiciousIds change
     useEffect(() => {
       let active = true;
       const fetchSuspects = async () => {
-        if (!hasStreams) return;
+        if (!hasActiveStreams) return;
         try {
           const res = await fetch("/api/get-suspicious-data", { cache: "no-store" });
           const data = await res.json().catch(() => ({}));
@@ -102,7 +142,7 @@ export default function Home() {
         } catch {}
       };
       // Only fetch when there are IDs to represent new/updated suspicious detections
-      if (hasStreams && suspiciousIds && suspiciousIds.length > 0) {
+      if (hasActiveStreams && suspiciousIds && suspiciousIds.length > 0) {
         fetchSuspects();
       } else {
         setSuspects([]);
@@ -110,7 +150,7 @@ export default function Home() {
       return () => {
         active = false;
       };
-    }, [hasStreams, JSON.stringify(suspiciousIds)]);
+    }, [hasActiveStreams, JSON.stringify(suspiciousIds)]);
 
     return (
       <aside className="bg-subpanel rounded-2xl p-6 h-full flex flex-col gap-6">
@@ -161,11 +201,14 @@ export default function Home() {
 
   function SuspectCard({ name, stream, time, img }: { name: string; stream: string; time: string; img: string }) {
     return (
-      <div className="flex items-center gap-3 rounded-xl bg-chip px-3 py-2 text-white/90">
-        <img src={img} alt={name} className="h-10 w-10 rounded object-cover bg-white" />
-        <div className="min-w-0">
-          <div className="font-medium truncate">{name}</div>
-          <div className="text-xs text-white/70 truncate">{stream} • {time}</div>
+      <div className="rounded-xl bg-chip px-3 py-3 text-white/90">
+        <div className="w-full flex justify-start">
+          <img src={img} alt={name} className="h-14 w-14 rounded object-cover bg-white" />
+        </div>
+        <div className="mt-2">
+          <div className="font-medium leading-tight break-words">{name}</div>
+          <div className="text-xs text-white/70 leading-tight break-words">{stream}</div>
+          <div className="text-xs text-white/50 leading-tight">{time}</div>
         </div>
       </div>
     );
@@ -173,19 +216,19 @@ export default function Home() {
 
   return (
     <div className="h-dvh w-full bg-black text-white overflow-hidden">
-      <div className="mx-auto max-w-[1200px] px-6 py-6 h-full">
+      <div className="mx-auto w-full max-w-[1400px] xl:max-w-[1600px] 2xl:max-w-[1920px] px-4 sm:px-6 lg:px-8 py-6 h-full">
         {/* Header */}
         <h1 className="text-2xl sm:text-3xl md:text-[32px] font-bold tracking-wide">LIVE FACE DETECTION</h1>
 
         {/* Content area */}
-        <div className="mt-6 h-[calc(100%-64px)] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div className="mt-6 h-[calc(100%-64px)] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-6">
           {/* Stream tiles container */}
           <div className="bg-panel rounded-2xl p-6 h-full overflow-auto">
-            <div className="flex flex-wrap gap-4 sm:gap-5 md:gap-6">
+            <div className="flex flex-wrap gap-5 sm:gap-6 md:gap-7">
               {streams.map((s) => (
                 <div
                   key={s.id}
-                  className="relative w-40 h-24 sm:w-56 sm:h-32 md:w-[220px] md:h-[130px] flex-none"
+                  className="relative w-56 h-32 sm:w-72 sm:h-40 md:w-[280px] md:h-[160px] lg:w-[340px] lg:h-[190px] xl:w-[400px] xl:h-[220px] flex-none"
                   onClick={() => {
                     setIsFullscreen(true);
                     setFullscreenLocalId(s.id);
@@ -197,7 +240,7 @@ export default function Home() {
                   {s.processorId ? (
                     <>
                       <img
-                        src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
+                        src={`/api/video_feed/${encodeURIComponent(s.processorId)}?v=${imgVersion}`}
                         alt={s.name}
                         className="absolute inset-0 w-full h-full object-cover rounded-2xl"
                       />
@@ -271,7 +314,7 @@ export default function Home() {
                   setNewName("");
                   setNewUrl("");
                 }}
-                className="bg-tile rounded-2xl w-40 h-24 sm:w-56 sm:h-32 md:w-[220px] md:h-[130px] flex items-center justify-center hover:opacity-90 transition flex-none"
+                className="bg-tile rounded-2xl w-56 h-32 sm:w-72 sm:h-40 md:w-[280px] md:h-[160px] lg:w-[340px] lg:h-[190px] xl:w-[400px] xl:h-[220px] flex items-center justify-center hover:opacity-90 transition flex-none"
                 aria-label="Add stream"
                 title="Add"
               >
@@ -284,7 +327,7 @@ export default function Home() {
           </div>
 
           {/* Right: stats + suspects */}
-          <RightPanel hasStreams={streams.length > 0} />
+          <RightPanel hasActiveStreams={streams.some((s) => !!s.processorId)} />
 
           {/* Fullscreen overlay */}
           {isFullscreen && (
@@ -306,7 +349,7 @@ export default function Home() {
                   if (!s) return null;
                   return s.processorId ? (
                     <img
-                      src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
+                      src={`/api/video_feed/${encodeURIComponent(s.processorId)}?v=${imgVersion}`}
                       alt={s.name}
                       className="absolute inset-0 w-full h-full object-contain bg-black"
                     />
