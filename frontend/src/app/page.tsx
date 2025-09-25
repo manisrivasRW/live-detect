@@ -232,6 +232,8 @@ export default function Home() {
                   onClick={() => {
                     setIsFullscreen(true);
                     setFullscreenLocalId(s.id);
+                    // Ensure only one active MJPEG connection by forcing a reload
+                    setImgVersion((v) => v + 1);
                   }}
                   role="button"
                   aria-label={`Expand ${s.name}`}
@@ -239,11 +241,14 @@ export default function Home() {
                 >
                   {s.processorId ? (
                     <>
-                      <img
-                        src={`/api/video_feed/${encodeURIComponent(s.processorId)}?v=${imgVersion}`}
-                        alt={s.name}
-                        className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-                      />
+                      {!(isFullscreen && fullscreenLocalId === s.id) && (
+                        <img
+                          src={`/api/video_feed/${encodeURIComponent(s.processorId)}?v=${imgVersion}`}
+                          alt={s.name}
+                          className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+                          onError={() => setImgVersion((v) => v + 1)}
+                        />
+                      )}
                       <div className="absolute inset-x-0 bottom-0 bg-black/40 text-white px-3 py-1 rounded-b-2xl pointer-events-none">
                         <span className="text-xs">{s.name}</span>
                       </div>
@@ -349,9 +354,11 @@ export default function Home() {
                   if (!s) return null;
                   return s.processorId ? (
                     <img
+                      key={`${s.processorId}-${imgVersion}`}
                       src={`/api/video_feed/${encodeURIComponent(s.processorId)}?v=${imgVersion}`}
                       alt={s.name}
                       className="absolute inset-0 w-full h-full object-contain bg-black"
+                      onError={() => setImgVersion((v) => v + 1)}
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[#8f8f8f]" />
