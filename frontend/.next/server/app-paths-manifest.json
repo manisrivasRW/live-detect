@@ -1,5 +1,5 @@
 {
-  "/api/streams/route": "app/api/streams/route.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/shared_stats/route": "app/api/shared_stats/route.js",
+  "/logs/page": "app/logs/page.js",
   "/page": "app/page.js"
 }
