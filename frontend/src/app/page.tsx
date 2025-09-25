@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [streams, setStreams] = useState<Array<{ id: number; name: string; url: string; backendId?: string }>>([]);
+  const [streams, setStreams] = useState<Array<{ id: number; name: string; url: string; backendId?: string; processorId?: string }>>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -145,6 +145,17 @@ export default function Home() {
                     e.preventDefault();
                     const name = newName.trim() || `stream ${nextId}`;
                     const url = newUrl.trim();
+                    let processorId: string | undefined = undefined;
+                    try {
+                      const startRes = await fetch("/api/start_stream", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url }),
+                      });
+                      const startData = await startRes.json().catch(() => ({}));
+                      processorId = startData?.stream_id;
+                    } catch {}
+
                     try {
                       const res = await fetch("/api/streams", {
                         method: "POST",
@@ -153,10 +164,10 @@ export default function Home() {
                       });
                       const data = await res.json().catch(() => ({}));
                       const backendId: string | undefined = data?.stream?.id;
-                      setStreams((prev) => [...prev, { id: nextId, name, url, backendId }]);
+                      setStreams((prev) => [...prev, { id: nextId, name, url, backendId, processorId }]);
                     } catch {
                       // fallback: still add locally
-                      setStreams((prev) => [...prev, { id: nextId, name, url }]);
+                      setStreams((prev) => [...prev, { id: nextId, name, url, processorId }]);
                     }
                     setShowAdd(false);
                   }}
