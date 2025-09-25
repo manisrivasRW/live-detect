@@ -164,6 +164,10 @@ class SharedFaceTracker:
                 'clean_faces': len(self.id2emb) - sum(self.id_suspicious_status.values()),
                 'database_entries': len(self.stored_labels)
             }
+    
+    def get_suspicious_data(self):
+        suspicious_ids = self.id_suspicious_status.keys()
+        
 
 # Global shared tracker
 shared_tracker = SharedFaceTracker()
@@ -447,6 +451,14 @@ def stream_status(stream_id):
 @app.route('/api/shared_stats')
 def get_shared_stats():
     return jsonify(shared_tracker.get_stats())
+
+@app.route('/api/get-suspicious-data')
+def get_data():
+    try:
+        shared_tracker.get_suspicious_data()
+        return jsonify({'status':'success'})
+    except Exception as e:
+        return jsonify({'status':'error','error':str(e)})
 
 @app.route('/api/reload_db', methods=['POST'])
 def reload_database():
