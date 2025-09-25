@@ -1,5 +1,8 @@
 {
   "/api/shared_stats/route": "app/api/shared_stats/route.js",
-  "/logs/page": "app/logs/page.js",
+  "/api/start_stream/route": "app/api/start_stream/route.js",
+  "/api/stop_stream/route": "app/api/stop_stream/route.js",
+  "/api/streams/route": "app/api/streams/route.js",
+  "/api/video_feed/[stream_id]/route": "app/api/video_feed/[stream_id]/route.js",
   "/page": "app/page.js"
 }

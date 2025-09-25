@@ -38,6 +38,7 @@ class SharedFaceTracker:
         self.id2emb = {}
         self.id_checked_in_db = {}
         self.id_suspicious_status = {}
+        self.suspicious_map = {}
         
         # Configuration
         self.top_k = 1
@@ -147,6 +148,7 @@ class SharedFaceTracker:
                             results.append({**self.stored_labels[idx], "score": float(score)})
                     if len(results) > 0:
                         self.id_suspicious_status[assigned_id] = True
+                        self.suspicious_map[assigned_id] = results[0]
                         logger.info(f"SUSPICIOUS ID {assigned_id} from stream {stream_id}: {results[0]}")
                     else:
                         self.id_suspicious_status[assigned_id] = False
@@ -166,8 +168,9 @@ class SharedFaceTracker:
             }
     
     def get_suspicious_data(self):
-        suspicious_ids = self.id_suspicious_status.keys()
-        
+        if len(self.suspicious_map) > 0 :
+            return list(self.suspicious_map.values())
+        return []    
 
 # Global shared tracker
 shared_tracker = SharedFaceTracker()
@@ -455,8 +458,7 @@ def get_shared_stats():
 @app.route('/api/get-suspicious-data')
 def get_data():
     try:
-        shared_tracker.get_suspicious_data()
-        return jsonify({'status':'success'})
+        return jsonify({'status':'success','data': shared_tracker.get_suspicious_data()})
     except Exception as e:
         return jsonify({'status':'error','error':str(e)})
 
