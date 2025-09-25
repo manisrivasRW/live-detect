@@ -20,26 +20,24 @@ export default function Home() {
     "No alerts",
   ]);
 
-  // Stop all active backend streams when leaving the page (browser close/refresh)
+  // Persist streams across reloads/navigation
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      const ids = streams.map((s) => s.processorId).filter(Boolean) as string[];
-      ids.forEach((pid) => {
-        try {
-          // keepalive allows the request to be sent during unload
-          fetch("/api/stop_stream", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ stream_id: pid }),
-            keepalive: true as any,
-          }).catch(() => {});
-        } catch {}
-      });
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    try {
+      const raw = localStorage.getItem("streams_state");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setStreams(parsed);
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("streams_state", JSON.stringify(streams));
+    } catch {}
   }, [streams]);
 
   const StreamLabel = ({ label }: { label: string }) => (
