@@ -46,7 +46,7 @@ export default function Home() {
     <span className="text-white/70">{label}</span>
   );
 
-  function RightPanel() {
+  function RightPanel({ hasStreams }: { hasStreams: boolean }) {
     const [stats, setStats] = useState<{ total_faces?: number; suspicious_faces?: number; clean_faces?: number; database_entries?: number } | null>(null);
     useEffect(() => {
       let timer: any;
@@ -56,13 +56,19 @@ export default function Home() {
           const data = await res.json().catch(() => ({}));
           setStats(data || {});
         } catch {}
-        timer = setTimeout(poll, 2000);
+        if (hasStreams) {
+          timer = setTimeout(poll, 2000);
+        }
       };
-      poll();
+      if (hasStreams) {
+        poll();
+      } else {
+        setStats(null);
+      }
       return () => {
         if (timer) clearTimeout(timer);
       };
-    }, []);
+    }, [hasStreams]);
 
     return (
       <aside className="bg-subpanel rounded-2xl p-6 h-full flex flex-col gap-6">
@@ -226,7 +232,7 @@ export default function Home() {
           </div>
 
           {/* Right: stats + suspects */}
-          <RightPanel />
+          <RightPanel hasStreams={streams.length > 0} />
 
           {/* Fullscreen overlay */}
           {isFullscreen && (
