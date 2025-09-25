@@ -47,7 +47,9 @@ export default function Home() {
   );
 
   function RightPanel({ hasStreams }: { hasStreams: boolean }) {
-    const [stats, setStats] = useState<{ total_faces?: number; suspicious_faces?: number; clean_faces?: number; database_entries?: number } | null>(null);
+    const [stats, setStats] = useState<{ total_faces?: number; suspicious_faces?: number; clean_faces?: number; database_entries?: number; suspicious_ids?: any } | null>(null);
+    const [suspiciousIds, setSuspiciousIds] = useState<any[]>([]);
+    const [suspects, setSuspects] = useState<any[]>([]);
     useEffect(() => {
       let timer: any;
       let isActive = true;
@@ -68,6 +70,8 @@ export default function Home() {
         poll();
       } else {
         setStats(null);
+        setSuspiciousIds([]);
+        setSuspects([]);
       }
       return () => {
         isActive = false;
@@ -75,6 +79,40 @@ export default function Home() {
         if (timer) clearTimeout(timer);
       };
     }, [hasStreams]);
+
+    // Track latest suspicious_ids from stats
+    useEffect(() => {
+      if (!hasStreams) return;
+      const ids = (stats?.suspicious_ids as any) || [];
+      // Normalize to array
+      const nextIds = Array.isArray(ids) ? ids : Array.from(ids || []);
+      setSuspiciousIds(nextIds);
+    }, [hasStreams, stats?.suspicious_ids]);
+
+    // Fetch suspects list when suspiciousIds change
+    useEffect(() => {
+      let active = true;
+      const fetchSuspects = async () => {
+        if (!hasStreams) return;
+        try {
+          const res = await fetch("/api/get-suspicious-data", { cache: "no-store" });
+          const data = await res.json().catch(() => ({}));
+          if (!active) return;
+          if (data?.status === "success" && Array.isArray(data?.data)) {
+            setSuspects(data.data);
+          }
+        } catch {}
+      };
+      // Only fetch when there are IDs to represent new/updated suspicious detections
+      if (hasStreams && suspiciousIds && suspiciousIds.length > 0) {
+        fetchSuspects();
+      } else {
+        setSuspects([]);
+      }
+      return () => {
+        active = false;
+      };
+    }, [hasStreams, JSON.stringify(suspiciousIds)]);
 
     return (
       <aside className="bg-subpanel rounded-2xl p-6 h-full flex flex-col gap-6">
@@ -91,9 +129,19 @@ export default function Home() {
         <div className="flex-1 min-h-0">
           <h3 className="text-xl font-semibold mb-3">Suspects Found</h3>
           <div className="space-y-3 overflow-auto pr-1">
-            {/* Hardcoded entries for now */}
-            <SuspectCard name="John Doe" stream="Entrance Cam" time="2025-09-25 14:22:10" img="/vercel.svg" />
-            <SuspectCard name="Jane Roe" stream="Lobby Cam" time="2025-09-25 14:18:47" img="/next.svg" />
+            {suspects.length === 0 ? (
+              <div className="text-white/60 text-sm">No suspects yet.</div>
+            ) : (
+              suspects.map((it, idx) => (
+                <SuspectCard
+                  key={idx}
+                  name={it?.name ?? "Unknown"}
+                  stream={it?.stream_name ?? "Stream"}
+                  time={it?.timestamp ?? ""}
+                  img={it?.img_url || "/vercel.svg"}
+                />
+              ))
+            )}
           </div>
         </div>
 
