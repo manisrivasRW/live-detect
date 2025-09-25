@@ -50,13 +50,17 @@ export default function Home() {
     const [stats, setStats] = useState<{ total_faces?: number; suspicious_faces?: number; clean_faces?: number; database_entries?: number } | null>(null);
     useEffect(() => {
       let timer: any;
+      let isActive = true;
+      const controller = new AbortController();
       const poll = async () => {
         try {
-          const res = await fetch("/api/shared_stats", { cache: "no-store" });
+          const res = await fetch("/api/shared_stats", { cache: "no-store", signal: controller.signal });
+          if (!isActive) return;
           const data = await res.json().catch(() => ({}));
+          if (!isActive) return;
           setStats(data || {});
         } catch {}
-        if (hasStreams) {
+        if (hasStreams && isActive) {
           timer = setTimeout(poll, 2000);
         }
       };
@@ -66,6 +70,8 @@ export default function Home() {
         setStats(null);
       }
       return () => {
+        isActive = false;
+        controller.abort();
         if (timer) clearTimeout(timer);
       };
     }, [hasStreams]);
@@ -123,17 +129,17 @@ export default function Home() {
     <div className="h-dvh w-full bg-black text-white overflow-hidden">
       <div className="mx-auto max-w-[1200px] px-6 py-6 h-full">
         {/* Header */}
-        <h1 className="text-[32px] font-bold tracking-wide">LIVE FACE DETECTION</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-[32px] font-bold tracking-wide">LIVE FACE DETECTION</h1>
 
         {/* Content area */}
-        <div className="mt-6 h-[calc(100%-64px)] grid grid-cols-[1fr_320px] gap-6">
+        <div className="mt-6 h-[calc(100%-64px)] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Stream tiles container */}
           <div className="bg-panel rounded-2xl p-6 h-full overflow-auto">
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-4 sm:gap-5 md:gap-6">
               {streams.map((s) => (
                 <div
                   key={s.id}
-                  className="relative w-[220px] h-[130px] flex-none"
+                  className="relative w-40 h-24 sm:w-56 sm:h-32 md:w-[220px] md:h-[130px] flex-none"
                   onClick={() => {
                     setIsFullscreen(true);
                     setFullscreenLocalId(s.id);
@@ -219,7 +225,7 @@ export default function Home() {
                   setNewName("");
                   setNewUrl("");
                 }}
-                className="bg-tile rounded-2xl w-[220px] h-[130px] flex items-center justify-center hover:opacity-90 transition flex-none"
+                className="bg-tile rounded-2xl w-40 h-24 sm:w-56 sm:h-32 md:w-[220px] md:h-[130px] flex items-center justify-center hover:opacity-90 transition flex-none"
                 aria-label="Add stream"
                 title="Add"
               >
