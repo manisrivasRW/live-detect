@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -18,6 +18,28 @@ export default function Home() {
     "Awaiting streams",
     "No alerts",
   ]);
+
+  // Stop all active backend streams when leaving the page (browser close/refresh)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const ids = streams.map((s) => s.processorId).filter(Boolean) as string[];
+      ids.forEach((pid) => {
+        try {
+          // keepalive allows the request to be sent during unload
+          fetch("/api/stop_stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stream_id: pid }),
+            keepalive: true as any,
+          }).catch(() => {});
+        } catch {}
+      });
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [streams]);
 
   const StreamLabel = ({ label }: { label: string }) => (
     <span className="text-white/70">{label}</span>
@@ -149,7 +171,7 @@ export default function Home() {
                 <button
                   aria-label="Minimize stream"
                   onClick={() => setIsFullscreen(false)}
-                  className="absolute right-4 top-4 h-8 w-8 grid place-items-center rounded-md bg-white/70 text-black hover:bg-white transition"
+                  className="absolute right-4 top-4 h-8 w-8 grid place-items-center rounded-md bg-white/70 text-black hover:bg-white transition z-20"
                   title="Minimize"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
