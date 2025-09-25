@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -44,6 +45,73 @@ export default function Home() {
   const StreamLabel = ({ label }: { label: string }) => (
     <span className="text-white/70">{label}</span>
   );
+
+  function RightPanel() {
+    const [stats, setStats] = useState<{ total_faces?: number; suspicious_faces?: number; clean_faces?: number; database_entries?: number } | null>(null);
+    useEffect(() => {
+      let timer: any;
+      const poll = async () => {
+        try {
+          const res = await fetch("/api/shared_stats", { cache: "no-store" });
+          const data = await res.json().catch(() => ({}));
+          setStats(data || {});
+        } catch {}
+        timer = setTimeout(poll, 2000);
+      };
+      poll();
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
+    }, []);
+
+    return (
+      <aside className="bg-subpanel rounded-2xl p-6 h-full flex flex-col gap-6">
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Stats</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Total Faces" value={stats?.total_faces ?? 0} />
+            <Stat label="Suspicious" value={stats?.suspicious_faces ?? 0} />
+            <Stat label="Clean" value={stats?.clean_faces ?? 0} />
+            <Stat label="DB Entries" value={stats?.database_entries ?? 0} />
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0">
+          <h3 className="text-xl font-semibold mb-3">Suspects Found</h3>
+          <div className="space-y-3 overflow-auto pr-1">
+            {/* Hardcoded entries for now */}
+            <SuspectCard name="John Doe" stream="Entrance Cam" time="2025-09-25 14:22:10" img="/vercel.svg" />
+            <SuspectCard name="Jane Roe" stream="Lobby Cam" time="2025-09-25 14:18:47" img="/next.svg" />
+          </div>
+        </div>
+
+        <Link href="/logs" className="mt-2 h-12 rounded-full btn-white px-6 text-lg font-medium self-start grid place-items-center">
+          View All
+        </Link>
+      </aside>
+    );
+  }
+
+  function Stat({ label, value }: { label: string; value: number }) {
+    return (
+      <div className="rounded-xl bg-chip text-white/90 px-4 py-3">
+        <div className="text-sm text-white/70">{label}</div>
+        <div className="text-2xl font-semibold">{value}</div>
+      </div>
+    );
+  }
+
+  function SuspectCard({ name, stream, time, img }: { name: string; stream: string; time: string; img: string }) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl bg-chip px-3 py-2 text-white/90">
+        <img src={img} alt={name} className="h-10 w-10 rounded object-cover bg-white" />
+        <div className="min-w-0">
+          <div className="font-medium truncate">{name}</div>
+          <div className="text-xs text-white/70 truncate">{stream} • {time}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-dvh w-full bg-black text-white overflow-hidden">
@@ -173,17 +241,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: logs panel */}
-          <aside className="bg-subpanel rounded-2xl p-6 h-full flex flex-col justify-between">
-            <div className="space-y-4 overflow-auto">
-              {logs.map((l, idx) => (
-                <div key={idx} className="h-14 rounded-full bg-chip px-4 flex items-center text-white/90">
-                  {l}
-                </div>
-              ))}
-            </div>
-            <button className="mt-6 h-12 rounded-full btn-white px-6 text-lg font-medium self-start">View All</button>
-          </aside>
+          {/* Right: stats + suspects */}
+          <RightPanel />
 
           {/* Fullscreen overlay */}
           {isFullscreen && (
