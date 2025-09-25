@@ -1,0 +1,3 @@
+{
+  "/api/get-suspicious-data/route": "app/api/get-suspicious-data/route.js"
+}
