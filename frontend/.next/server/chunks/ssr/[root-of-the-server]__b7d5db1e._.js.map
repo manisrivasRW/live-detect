@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Mani/Desktop/live_detect/frontend/src/app/logs/page.tsx"],"sourcesContent":["export default function LogsPage() {\r\n\treturn (\r\n\t\t<div className=\"min-h-dvh bg-black text-white px-6 py-6\">\r\n\t\t\t<h1 className=\"text-2xl font-semibold\">Suspects Logs</h1>\r\n\t\t\t<p className=\"mt-2 text-white/70\">Coming soon. This page will list all suspicious detections.</p>\r\n\t\t</div>\r\n\t);\r\n}\r\n\r\n\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACvB,qBACC,8OAAC;QAAI,WAAU;;0BACd,8OAAC;gBAAG,WAAU;0BAAyB;;;;;;0BACvC,8OAAC;gBAAE,WAAU;0BAAqB;;;;;;;;;;;;AAGrC","debugId":null}}]
-}

@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 55, "column": 0}, "map": {"version":3,"sources":["file:///home/ratish/Documents/live-detect/frontend/src/app/api/stop_stream/route.ts"],"sourcesContent":["import { NextResponse } from \"next/server\";\n\nconst BACKEND_URL = process.env.BACKEND_URL || \"http://localhost:5000\";\n\nexport async function POST(request: Request) {\n\ttry {\n\t\tconst body = await request.json().catch(() => ({}));\n\t\tconst res = await fetch(`${BACKEND_URL}/api/stop_stream`, {\n\t\t\tmethod: \"POST\",\n\t\t\theaders: { \"Content-Type\": \"application/json\" },\n\t\t\tbody: JSON.stringify(body),\n\t\t});\n\t\tconst data = await res.json().catch(() => ({}));\n\t\treturn NextResponse.json(data, { status: res.status });\n\t} catch (err) {\n\t\treturn NextResponse.json({ error: \"backend_unreachable\" }, { status: 502 });\n\t}\n}\n\n\n"],"names":[],"mappings":";;;;AAAA;;AAEA,MAAM,cAAc,QAAQ,GAAG,CAAC,WAAW,IAAI;AAExC,eAAe,KAAK,OAAgB;IAC1C,IAAI;QACH,MAAM,OAAO,MAAM,QAAQ,IAAI,GAAG,KAAK,CAAC,IAAM,CAAC,CAAC,CAAC;QACjD,MAAM,MAAM,MAAM,MAAM,GAAG,YAAY,gBAAgB,CAAC,EAAE;YACzD,QAAQ;YACR,SAAS;gBAAE,gBAAgB;YAAmB;YAC9C,MAAM,KAAK,SAAS,CAAC;QACtB;QACA,MAAM,OAAO,MAAM,IAAI,IAAI,GAAG,KAAK,CAAC,IAAM,CAAC,CAAC,CAAC;QAC7C,OAAO,gJAAY,CAAC,IAAI,CAAC,MAAM;YAAE,QAAQ,IAAI,MAAM;QAAC;IACrD,EAAE,OAAO,KAAK;QACb,OAAO,gJAAY,CAAC,IAAI,CAAC;YAAE,OAAO;QAAsB,GAAG;YAAE,QAAQ;QAAI;IAC1E;AACD","debugId":null}}]
-}
