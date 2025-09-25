@@ -164,7 +164,8 @@ class SharedFaceTracker:
                 'total_faces': len(self.id2emb),
                 'suspicious_faces': sum(self.id_suspicious_status.values()),
                 'clean_faces': len(self.id2emb) - sum(self.id_suspicious_status.values()),
-                'database_entries': len(self.stored_labels)
+                'database_entries': len(self.stored_labels),
+                'suspicious_ids': self.id_suspicious_status.keys()
             }
     
     def get_suspicious_data(self):
