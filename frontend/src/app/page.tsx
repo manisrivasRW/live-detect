@@ -35,14 +35,22 @@ export default function Home() {
             <div className="flex flex-wrap gap-6">
               {streams.map((s) => (
                 <div key={s.id} className="relative w-[220px] h-[130px] flex-none">
-                  <button
-                    onClick={() => setIsFullscreen(true)}
-                    className="absolute inset-0 bg-[#8f8f8f] text-black rounded-2xl flex items-end justify-start p-4 hover:opacity-95 transition cursor-pointer"
-                    aria-label={`Expand ${s.name}`}
-                    title="Expand"
-                  >
-                    <span className="text-white/90">{s.name}</span>
-                  </button>
+                  {s.processorId ? (
+                    <img
+                      src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
+                      alt={s.name}
+                      className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setIsFullscreen(true)}
+                      className="absolute inset-0 bg-[#8f8f8f] text-black rounded-2xl flex items-end justify-start p-4 hover:opacity-95 transition cursor-pointer"
+                      aria-label={`Expand ${s.name}`}
+                      title="Expand"
+                    >
+                      <span className="text-white/90">{s.name}</span>
+                    </button>
+                  )}
                   {/* Rename */}
                   <button
                     onClick={(e) => {
@@ -64,11 +72,27 @@ export default function Home() {
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
-                      setStreams((prev) => prev.filter((x) => x.id !== s.id));
-                      if (s.backendId) {
-                        try {
-                          await fetch(`/api/streams?id=${encodeURIComponent(s.backendId)}`, { method: "DELETE" });
-                        } catch {}
+                      try {
+                        const requests: Promise<Response>[] = [];
+                        if (s.processorId) {
+                          requests.push(
+                            fetch("/api/stop_stream", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ stream_id: s.processorId }),
+                            })
+                          );
+                        }
+                        if (s.backendId) {
+                          requests.push(
+                            fetch(`/api/streams?id=${encodeURIComponent(s.backendId)}`, { method: "DELETE" })
+                          );
+                        }
+                        if (requests.length) {
+                          await Promise.allSettled(requests);
+                        }
+                      } finally {
+                        setStreams((prev) => prev.filter((x) => x.id !== s.id));
                       }
                     }}
                     className="absolute -right-2 -top-2 h-7 w-7 rounded-full bg-black/70 text-white grid place-items-center hover:bg-black"
