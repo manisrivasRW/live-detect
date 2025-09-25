@@ -69,15 +69,36 @@ export default function Home() {
                   title="Expand"
                 >
                   {s.processorId ? (
-                    <img
-                      src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
-                      alt={s.name}
-                      className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-                    />
+                    <>
+                      <img
+                        src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
+                        alt={s.name}
+                        className={`${isFullscreen && fullscreenLocalId === s.id ? "fixed inset-0 z-40 w-full h-full object-contain bg-black" : "absolute inset-0 w-full h-full object-cover rounded-2xl"}`}
+                      />
+                      {/* Name overlay on video */}
+                      {!isFullscreen && (
+                        <div className="absolute inset-x-0 bottom-0 bg-black/40 text-white px-3 py-1 rounded-b-2xl pointer-events-none">
+                          <span className="text-xs">{s.name}</span>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="absolute inset-0 bg-[#8f8f8f] text-black rounded-2xl flex items-end justify-start p-4">
                       <span className="text-white/90">{s.name}</span>
                     </div>
+                  )}
+                  {isFullscreen && fullscreenLocalId === s.id && (
+                    <button
+                      aria-label="Minimize stream"
+                      onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }}
+                      className="fixed right-4 top-4 h-8 w-8 grid place-items-center rounded-md bg-white/70 text-black hover:bg-white transition z-50"
+                      title="Minimize"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                        <path d="M9 9L4 9L4 4M15 15L20 15L20 20" />
+                        <path d="M9 9L4 4M15 15L20 20" />
+                      </svg>
+                    </button>
                   )}
                   {/* Rename */}
                   <button
