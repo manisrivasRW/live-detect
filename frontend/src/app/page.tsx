@@ -8,6 +8,9 @@ export default function Home() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const [showRename, setShowRename] = useState(false);
+  const [renameLocalId, setRenameLocalId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const nextId = useMemo(() => (streams.length ? Math.max(...streams.map(s => s.id)) + 1 : 1), [streams]);
   const [logs] = useState<string[]>([
     "System ready",
@@ -39,6 +42,23 @@ export default function Home() {
                     title="Expand"
                   >
                     <span className="text-white/90">{s.name}</span>
+                  </button>
+                  {/* Rename */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowRename(true);
+                      setRenameLocalId(s.id);
+                      setRenameValue(s.name);
+                    }}
+                    className="absolute -left-2 -top-2 h-7 w-7 rounded-full bg-black/70 text-white grid place-items-center hover:bg-black"
+                    aria-label={`Rename ${s.name}`}
+                    title="Rename"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                    </svg>
                   </button>
                   {/* Delete */}
                   <button
@@ -169,6 +189,72 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setShowAdd(false)}
+                      className="h-11 px-6 rounded-full bg-chip text-white/90 text-base"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Rename Stream Modal */}
+          {showRename && (
+            <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-6">
+              <div className="w-full max-w-[420px] rounded-2xl bg-[#3a3a3a] p-8 shadow-lg">
+                <h2 className="text-2xl font-semibold">Rename stream</h2>
+                <form
+                  className="mt-6 space-y-4"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const trimmed = renameValue.trim();
+                    if (!trimmed || renameLocalId == null) {
+                      setShowRename(false);
+                      return;
+                    }
+                    let backendId: string | undefined;
+                    setStreams((prev) => {
+                      const next = prev.map((x) => {
+                        if (x.id === renameLocalId) {
+                          backendId = x.backendId;
+                          return { ...x, name: trimmed };
+                        }
+                        return x;
+                      });
+                      return next;
+                    });
+                    if (backendId) {
+                      try {
+                        await fetch(`/api/streams`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ id: backendId, name: trimmed }),
+                        });
+                      } catch {}
+                    }
+                    setShowRename(false);
+                  }}
+                >
+                  <div className="space-y-2">
+                    <label className="block text-sm text-white/80">New name</label>
+                    <input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      placeholder="Enter a name"
+                      className="w-full h-11 rounded-full px-4 text-black outline-none border-0 bg-white"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="submit"
+                      className="h-11 px-6 rounded-full btn-white text-base font-medium"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowRename(false)}
                       className="h-11 px-6 rounded-full bg-chip text-white/90 text-base"
                     >
                       Cancel

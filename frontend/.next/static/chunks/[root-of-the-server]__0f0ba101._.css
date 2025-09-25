@@ -562,6 +562,10 @@
     bottom: calc(var(--spacing) * 4);
   }
 
+  .-left-2 {
+    left: calc(var(--spacing) * -2);
+  }
+
   .left-0 {
     left: calc(var(--spacing) * 0);
   }
@@ -711,6 +715,10 @@
 
   .max-w-5xl {
     max-width: var(--container-5xl);
+  }
+
+  .max-w-\[420px\] {
+    max-width: 420px;
   }
 
   .max-w-\[520px\] {

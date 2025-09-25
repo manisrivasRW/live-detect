@@ -66,3 +66,26 @@ export async function DELETE(request: Request) {
 }
 
 
+export async function PATCH(request: Request) {
+	try {
+		const body = await request.json();
+		const id: string = (body?.id ?? "").toString();
+		const name: string = (body?.name ?? "").toString().trim();
+		if (!id || !name) {
+			return NextResponse.json(
+				{ error: "Both 'id' and 'name' are required." },
+				{ status: 400 }
+			);
+		}
+		const record = streams.find((s) => s.id === id);
+		if (!record) {
+			return NextResponse.json({ error: "not found" }, { status: 404 });
+		}
+		record.name = name;
+		return NextResponse.json({ stream: record });
+	} catch (err) {
+		return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+	}
+}
+
+
