@@ -574,6 +574,10 @@
     left: 50%;
   }
 
+  .z-20 {
+    z-index: 20;
+  }
+
   .z-50 {
     z-index: 50;
   }
@@ -743,10 +747,6 @@
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
 
-  .cursor-pointer {
-    cursor: pointer;
-  }
-
   .grid-cols-\[1fr_320px\] {
     grid-template-columns: 1fr 320px;
   }
@@ -888,6 +888,14 @@
     }
   }
 
+  .object-contain {
+    object-fit: contain;
+  }
+
+  .object-cover {
+    object-fit: cover;
+  }
+
   .p-4 {
     padding: calc(var(--spacing) * 4);
   }
@@ -958,10 +966,6 @@
   .tracking-wide {
     --tw-tracking: var(--tracking-wide);
     letter-spacing: var(--tracking-wide);
-  }
-
-  .text-\[\#4b4b4b\] {
-    color: #4b4b4b;
   }
 
   .text-black {
@@ -1038,12 +1042,6 @@
   @media (hover: hover) {
     .hover\:opacity-90:hover {
       opacity: .9;
-    }
-  }
-
-  @media (hover: hover) {
-    .hover\:opacity-95:hover {
-      opacity: .95;
     }
   }
 }
