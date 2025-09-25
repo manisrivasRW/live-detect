@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [streams, setStreams] = useState<Array<{ id: number; name: string; url: string; backendId?: string; processorId?: string }>>([]);
+  const [fullscreenLocalId, setFullscreenLocalId] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -34,7 +35,17 @@ export default function Home() {
           <div className="bg-panel rounded-2xl p-6 h-full overflow-auto">
             <div className="flex flex-wrap gap-6">
               {streams.map((s) => (
-                <div key={s.id} className="relative w-[220px] h-[130px] flex-none">
+                <div
+                  key={s.id}
+                  className="relative w-[220px] h-[130px] flex-none"
+                  onClick={() => {
+                    setIsFullscreen(true);
+                    setFullscreenLocalId(s.id);
+                  }}
+                  role="button"
+                  aria-label={`Expand ${s.name}`}
+                  title="Expand"
+                >
                   {s.processorId ? (
                     <img
                       src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
@@ -42,14 +53,9 @@ export default function Home() {
                       className="absolute inset-0 w-full h-full object-cover rounded-2xl"
                     />
                   ) : (
-                    <button
-                      onClick={() => setIsFullscreen(true)}
-                      className="absolute inset-0 bg-[#8f8f8f] text-black rounded-2xl flex items-end justify-start p-4 hover:opacity-95 transition cursor-pointer"
-                      aria-label={`Expand ${s.name}`}
-                      title="Expand"
-                    >
+                    <div className="absolute inset-0 bg-[#8f8f8f] text-black rounded-2xl flex items-end justify-start p-4">
                       <span className="text-white/90">{s.name}</span>
-                    </button>
+                    </div>
                   )}
                   {/* Rename */}
                   <button
@@ -136,10 +142,10 @@ export default function Home() {
             <button className="mt-6 h-12 rounded-full btn-white px-6 text-lg font-medium self-start">View All</button>
           </aside>
 
-          {/* Fullscreen overlay (layout-only) */}
+          {/* Fullscreen overlay */}
           {isFullscreen && (
             <div className="fixed inset-0 bg-black/50 z-50 grid place-items-center p-6">
-              <div className="relative w-full max-w-5xl h-[80dvh] rounded-2xl bg-tile-active text-black">
+              <div className="relative w-full max-w-5xl h-[80dvh] rounded-2xl bg-tile-active text-black overflow-hidden">
                 <button
                   aria-label="Minimize stream"
                   onClick={() => setIsFullscreen(false)}
@@ -151,9 +157,26 @@ export default function Home() {
                     <path d="M9 9L4 4M15 15L20 20" />
                   </svg>
                 </button>
-                <div className="absolute bottom-4 right-4 text-[#4b4b4b] text-lg">
-                  <StreamLabel label={streams[0]?.name || "stream"} />
-                </div>
+                {(() => {
+                  const s = streams.find((x) => x.id === fullscreenLocalId) || streams[0];
+                  if (!s) return null;
+                  return (
+                    <>
+                      {s.processorId ? (
+                        <img
+                          src={`/api/video_feed/${encodeURIComponent(s.processorId)}`}
+                          alt={s.name}
+                          className="absolute inset-0 w-full h-full object-contain bg-black"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-[#8f8f8f]" />
+                      )}
+                      <div className="absolute bottom-4 right-4 text-white text-lg">
+                        <StreamLabel label={s.name} />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
