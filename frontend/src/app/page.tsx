@@ -8,6 +8,7 @@ export default function Home() {
   const [streams, setStreams] = useState<Array<{ id: number; name: string; url: string; backendId?: string; processorId?: string }>>([]);
   const [fullscreenLocalId, setFullscreenLocalId] = useState<number | null>(null);
   const [imgVersion, setImgVersion] = useState<number>(0);
+  const [isFullscreenLoading, setIsFullscreenLoading] = useState<boolean>(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -232,6 +233,7 @@ export default function Home() {
                   onClick={() => {
                     setIsFullscreen(true);
                     setFullscreenLocalId(s.id);
+                    setIsFullscreenLoading(true);
                     // Ensure only one active MJPEG connection by forcing a reload
                     setImgVersion((v) => v + 1);
                   }}
@@ -340,7 +342,10 @@ export default function Home() {
               <div className="relative w-full max-w-5xl h-[80dvh] rounded-2xl bg-tile-active text-black overflow-hidden">
                 <button
                   aria-label="Minimize stream"
-                  onClick={() => setIsFullscreen(false)}
+                  onClick={() => {
+                    setIsFullscreen(false);
+                    setIsFullscreenLoading(false);
+                  }}
                   className="absolute right-4 top-4 h-8 w-8 grid place-items-center rounded-md bg-white/70 text-black hover:bg-white transition z-20"
                   title="Minimize"
                 >
@@ -358,12 +363,22 @@ export default function Home() {
                       src={`/api/video_feed/${encodeURIComponent(s.processorId)}?v=${imgVersion}`}
                       alt={s.name}
                       className="absolute inset-0 w-full h-full object-contain bg-black"
+                      onLoad={() => setIsFullscreenLoading(false)}
                       onError={() => setImgVersion((v) => v + 1)}
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[#8f8f8f]" />
                   );
                 })()}
+                {isFullscreenLoading && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="relative h-16 w-16">
+                      <div className="absolute inset-0 rounded-full border-4 border-white/20"></div>
+                      <div className="absolute inset-0 rounded-full border-4 border-white border-t-transparent animate-spin"></div>
+                    </div>
+                    <div className="mt-4 text-white/80 text-sm">Loading stream…</div>
+                  </div>
+                )}
                 {(() => {
                   const s = streams.find((x) => x.id === fullscreenLocalId) || streams[0];
                   if (!s) return null;
